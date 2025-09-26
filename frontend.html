@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Biblioteca</title>
+ 
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    
+    body {
+      margin: 20px;
+      background-color: #f5f0e1; 
+    }
+
+    #form-livro {
+      background-color: #ffffff;
+      padding: 20px;
+      border-radius: 10px;
+      max-width: 500px;
+    }
+
+    #form-livro input,
+    #form-livro select {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+      border: 2px solid #6a0dad; 
+      border-radius: 5px;
+    }
+
+    #btn-salvar {
+      background-color: #6a0dad;
+      color: white;
+      padding: 8px 15px;
+      border-radius: 5px;
+    }
+
+    #btn-cancelar {
+      background-color: #9b59b6;
+      color: white;
+      padding: 8px 15px;
+      border-radius: 5px;
+    }
+
+    #btn-pesquisar, #btn-listar {
+     background-color: #9b59b6;
+     color: white;
+     padding: 8px 15px;
+     border-radius: 5px;
+    }
+ 
+    #tabela-livros {
+      margin-top: 20px;
+    }
+
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>Gerenciamento de Livros</h1>
+    <hr>
+    
+    <div id="form-livro">
+      <input type="hidden" id="livro-id">
+      <input type="text" id="livro-titulo" placeholder="Título do livro">
+      <input type="text" id="livro-autor" placeholder="Autor">
+      <select id="livro-disponivel">
+        <option value="1">Disponível</option>
+        <option value="0">Indisponível</option>
+      </select>
+      <button id="btn-salvar" onclick="salvar()">Salvar</button>
+      <button id="btn-cancelar" onclick="limpar()">Cancelar</button>
+    </div>
+
+    
+    <div class="mb-4">
+      <input type="text" id="pesquisa" placeholder="Pesquisar por título ou autor">
+      <button id="btn-pesquisar" onclick="carregarPesquisa()">Pesquisar</button>
+      <button id="btn-listar" onclick="carregar()">Listar todos</button>
+    </div>
+
+   
+    <table id="tabela-livros" class="table table-striped table-hover table-bordered">
+      <thead class="table-dark">
+        <tr>
+          <th>ID</th>
+          <th>Título</th>
+          <th>Autor</th>
+          <th>Disponível</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody id="corpo-tabela"></tbody>
+    </table>
+  </div>
+
+  <script>
+    const API_URL = "http://localhost/avaliação/livros.php"; 
+
+    function carregar(pesquisa = "") {
+      const tbody = document.getElementById("corpo-tabela");
+      tbody.innerHTML = "";
+
+      let url = API_URL;
+      if (pesquisa) url += "?pesquisa=" + encodeURIComponent(pesquisa);
+
+      fetch(url)
+        .then(resposta => resposta.json())
+        .then(dados => {
+          dados.forEach(livro => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+              <td>${livro.ID}</td>
+              <td>${livro.Titulo}</td>
+              <td>${livro.Autor}</td>
+              <td>${livro.Disponivel == 1 ? "Sim" : "Não"}</td>
+              <td>
+                <button class="btn-editar" onclick='editar(${JSON.stringify(livro)})'>Editar</button>
+                <button class="btn-excluir" onclick='excluir(${livro.ID})'>Excluir</button>
+              </td>
+            `;
+            tbody.appendChild(tr);
+          });
+        });
+    }
+
+    function carregarPesquisa() {
+      const valor = document.getElementById("pesquisa").value;
+      carregar(valor);
+    }
+
+    async function salvar() {
+      const id = document.getElementById("livro-id").value;
+      const titulo = document.getElementById("livro-titulo").value;
+      const autor = document.getElementById("livro-autor").value;
+      const disponivel = document.getElementById("livro-disponivel").value;
+
+      const payload = {ID: id, Titulo: titulo, Autor: autor, Disponivel: disponivel};
+
+      if (id) {
+        await fetch(API_URL, { method: "PUT", body: JSON.stringify(payload) });
+      } else {
+        await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
+      }
+
+      limpar();
+      carregar();
+    }
+
+    function editar(livro) {
+      document.getElementById("livro-id").value = livro.ID;
+      document.getElementById("livro-titulo").value = livro.Titulo;
+      document.getElementById("livro-autor").value = livro.Autor;
+      document.getElementById("livro-disponivel").value = livro.Disponivel;
+    }
+
+    async function excluir(id) {
+      if (confirm("Tem certeza que deseja excluir este livro?")) {
+        await fetch(API_URL + "?id=" + id, { method: "DELETE" });
+        carregar();
+      }
+    }
+
+    function limpar() {
+      document.getElementById("livro-id").value = "";
+      document.getElementById("livro-titulo").value = "";
+      document.getElementById("livro-autor").value = "";
+      document.getElementById("livro-disponivel").value = "1";
+    }
+
+    carregar();
+  </script>
+
+
+
+</body>
+</html>
